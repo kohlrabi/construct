@@ -1,6 +1,7 @@
 from construct.lib.py3compat import *
 import re
 import sys
+from functools import lru_cache
 
 
 globalPrintFullStrings = False
@@ -283,3 +284,35 @@ class ListContainer(list):
         """
         compiled_pattern = re.compile(pattern)
         return self._search(compiled_pattern, True)
+
+
+@lru_cache(maxsize=None)
+def SlottedContainerFactory(slots):
+
+    filtered = list(set(slots).difference(SlottedContainerFactory.unwanted))
+
+    class SlottedContainer(Container):
+        __slots__ = filtered
+
+        def __getattr__(self, name):
+            try:
+                return self[name]
+            except KeyError:
+                raise AttributeError(name)
+
+        def __setattr__(self, name, value):
+            try:
+                self[name] = value
+            except KeyError:
+                raise AttributeError(name)
+
+        def __delattr__(self, name):
+            try:
+                del self[name]
+            except KeyError:
+                raise AttributeError(name)
+
+    return SlottedContainer
+
+SlottedContainerFactory.unwanted = set(Container.__dict__.keys()).union(set(OrderedDict.__dict__.keys()))
+

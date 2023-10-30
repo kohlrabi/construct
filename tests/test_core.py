@@ -1840,7 +1840,7 @@ def test_from_issue_357():
     assert st2.build(dict(b={})) == b""
 
 def test_context_is_container():
-    d = Struct(Check(lambda ctx: type(ctx) is Container))
+    d = Struct(Check(lambda ctx: isinstance(ctx, Container)))
     d.parse(b"")
 
 def test_from_issue_362():

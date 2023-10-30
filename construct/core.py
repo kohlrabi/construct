@@ -5,6 +5,7 @@ import struct, io, binascii, itertools, collections, pickle, sys, os, hashlib, i
 from construct.lib import *
 from construct.expr import *
 from construct.version import *
+from construct.lib.containers import SlottedContainerFactory
 
 
 #===============================================================================
@@ -2218,7 +2219,8 @@ class Struct(Construct):
     def __init__(self, *subcons, **subconskw):
         super().__init__()
         self.subcons = list(subcons) + list(k/v for k,v in subconskw.items())
-        self._subcons = Container((sc.name,sc) for sc in self.subcons if sc.name)
+        self.container_factory = SlottedContainerFactory(tuple(sc.name for sc in self.subcons if sc.name))
+        self._subcons = self.container_factory((sc.name,sc) for sc in self.subcons if sc.name)
         self.flagbuildnone = all(sc.flagbuildnone for sc in self.subcons)
 
     def __getattr__(self, name):
@@ -2227,9 +2229,9 @@ class Struct(Construct):
         raise AttributeError
 
     def _parse(self, stream, context, path):
-        obj = Container()
+        obj = self.container_factory()
         obj._io = stream
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         for sc in self.subcons:
             try:
@@ -2243,8 +2245,8 @@ class Struct(Construct):
 
     def _build(self, obj, stream, context, path):
         if obj is None:
-            obj = Container()
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
+            obj = self.container_factory()
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         context.update(obj)
         for sc in self.subcons:
@@ -2265,7 +2267,7 @@ class Struct(Construct):
         return context
 
     def _sizeof(self, context, path):
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = None, _index = context.get("_index", None))
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = None, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         try:
             return sum(sc._sizeof(context, path) for sc in self.subcons)
@@ -2375,7 +2377,8 @@ class Sequence(Construct):
     def __init__(self, *subcons, **subconskw):
         super().__init__()
         self.subcons = list(subcons) + list(k/v for k,v in subconskw.items())
-        self._subcons = Container((sc.name,sc) for sc in self.subcons if sc.name)
+        self.container_factory = SlottedContainerFactory(tuple(sc.name for sc in self.subcons if sc.name))
+        self._subcons = self.container_factory((sc.name,sc) for sc in self.subcons if sc.name)
         self.flagbuildnone = all(sc.flagbuildnone for sc in self.subcons)
 
     def __getattr__(self, name):
@@ -2385,7 +2388,7 @@ class Sequence(Construct):
 
     def _parse(self, stream, context, path):
         obj = ListContainer()
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         for sc in self.subcons:
             try:
@@ -2400,7 +2403,7 @@ class Sequence(Construct):
     def _build(self, obj, stream, context, path):
         if obj is None:
             obj = ListContainer([None for sc in self.subcons])
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         objiter = iter(obj)
         retlist = ListContainer()
@@ -2420,7 +2423,7 @@ class Sequence(Construct):
         return retlist
 
     def _sizeof(self, context, path):
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = None, _index = context.get("_index", None))
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = None, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         try:
             return sum(sc._sizeof(context, path) for sc in self.subcons)
@@ -3218,7 +3221,8 @@ class FocusedSeq(Construct):
         super().__init__()
         self.parsebuildfrom = parsebuildfrom
         self.subcons = list(subcons) + list(k/v for k,v in subconskw.items())
-        self._subcons = Container((sc.name,sc) for sc in self.subcons if sc.name)
+        self.container_factory = SlottedContainerFactory(tuple(sc.name for sc in self.subcons if sc.name))
+        self._subcons = self.container_factory((sc.name,sc) for sc in self.subcons if sc.name)
 
     def __getattr__(self, name):
         if name in self._subcons:
@@ -3226,7 +3230,7 @@ class FocusedSeq(Construct):
         raise AttributeError
 
     def _parse(self, stream, context, path):
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         parsebuildfrom = evaluate(self.parsebuildfrom, context)
         for i,sc in enumerate(self.subcons):
@@ -3238,7 +3242,7 @@ class FocusedSeq(Construct):
         return finalret
 
     def _build(self, obj, stream, context, path):
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         parsebuildfrom = evaluate(self.parsebuildfrom, context)
         context[parsebuildfrom] = obj
@@ -3251,7 +3255,7 @@ class FocusedSeq(Construct):
         return finalret
 
     def _sizeof(self, context, path):
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = None, _index = context.get("_index", None))
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = None, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         try:
             return sum(sc._sizeof(context, path) for sc in self.subcons)
@@ -3691,7 +3695,8 @@ class Union(Construct):
         super().__init__()
         self.parsefrom = parsefrom
         self.subcons = list(subcons) + list(k/v for k,v in subconskw.items())
-        self._subcons = Container((sc.name,sc) for sc in self.subcons if sc.name)
+        self.container_factory = SlottedContainerFactory(tuple(sc.name for sc in self.subcons if sc.name))
+        self._subcons = self.container_factory((sc.name,sc) for sc in self.subcons if sc.name)
 
     def __getattr__(self, name):
         if name in self._subcons:
@@ -3699,8 +3704,8 @@ class Union(Construct):
         raise AttributeError
 
     def _parse(self, stream, context, path):
-        obj = Container()
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
+        obj = self.container_factory()
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         fallback = stream_tell(stream, path)
         forwards = {}
@@ -3719,7 +3724,7 @@ class Union(Construct):
         return obj
 
     def _build(self, obj, stream, context, path):
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         context.update(obj)
         for sc in self.subcons:
@@ -3736,7 +3741,7 @@ class Union(Construct):
             buildret = sc._build(subobj, stream, context, path)
             if sc.name:
                 context[sc.name] = buildret
-            return Container({sc.name:buildret})
+            return self.container_factory({sc.name:buildret})
         else:
             raise UnionError("cannot build, none of subcons were found in the dictionary %r" % (obj, ), path=path)
 
@@ -5984,8 +5989,9 @@ class LazyStruct(Construct):
     def __init__(self, *subcons, **subconskw):
         super().__init__()
         self.subcons = list(subcons) + list(k/v for k,v in subconskw.items())
-        self._subcons = Container((sc.name,sc) for sc in self.subcons if sc.name)
-        self._subconsindexes = Container((sc.name,i) for i,sc in enumerate(self.subcons) if sc.name)
+        self.container_factory = SlottedContainerFactory(tuple(sc.name for sc in self.subcons if sc.name))
+        self._subcons = self.container_factory((sc.name,sc) for sc in self.subcons if sc.name)
+        self._subconsindexes = self.container_factory((sc.name,i) for i,sc in enumerate(self.subcons) if sc.name)
         self.flagbuildnone = all(sc.flagbuildnone for sc in self.subcons)
 
     def __getattr__(self, name):
@@ -5994,7 +6000,7 @@ class LazyStruct(Construct):
         raise AttributeError
 
     def _parse(self, stream, context, path):
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         offset = stream_tell(stream, path)
         offsets = {0: offset}
@@ -6015,8 +6021,8 @@ class LazyStruct(Construct):
     def _build(self, obj, stream, context, path):
         # exact copy from Struct class
         if obj is None:
-            obj = Container()
-        context = Container(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
+            obj = self.container_factory()
+        context = self.container_factory(_ = context, _params = context._params, _root = None, _parsing = context._parsing, _building = context._building, _sizing = context._sizing, _subcons = self._subcons, _io = stream, _index = context.get("_index", None))
         context._root = context._.get("_root", context)
         context.update(obj)
         for sc in self.subcons:
