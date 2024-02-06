@@ -314,5 +314,5 @@ def SlottedContainerFactory(slots):
 
     return SlottedContainer
 
-SlottedContainerFactory.unwanted = set(Container.__dict__.keys()).union(set(OrderedDict.__dict__.keys()))
+SlottedContainerFactory.unwanted = set(Container.__dict__.keys()).union(set(dict.__dict__.keys()))
 
